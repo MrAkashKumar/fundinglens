@@ -33,6 +33,7 @@ import WealthOverview from './WealthOverview';
 import IntelligencePanel from './IntelligencePanel';
 import ProjectionExplorer from './ProjectionExplorer';
 import PortfolioSimulator from './PortfolioSimulator';
+import EventSimulator from './EventSimulator';
 import ConversationBrief from './ConversationBrief';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sparkles, Activity, FileText } from 'lucide-react';
@@ -289,10 +290,13 @@ export default function PortfolioDesk({ book }: { book: PortfolioBook }) {
             ) : tab === 'scenario' ? (
               <Tabs
                 key={client.id + portfolioId}
-                defaultValue="sale"
+                defaultValue="events"
                 className="in-explorer-tabs"
               >
                 <TabsList variant="line">
+                  <TabsTrigger value="events">
+                    World events & impact
+                  </TabsTrigger>
                   <TabsTrigger value="sale">Goal & sale scenarios</TabsTrigger>
                   <TabsTrigger value="simulator">
                     Portfolio simulator
@@ -301,6 +305,9 @@ export default function PortfolioDesk({ book }: { book: PortfolioBook }) {
                     Wealth projections
                   </TabsTrigger>
                 </TabsList>
+                <TabsContent value="events">
+                  <EventSimulator client={client} portfolios={portfolios} />
+                </TabsContent>
                 <TabsContent value="sale">
                   <ScenarioPlanner
                     key={client.id + portfolioId}

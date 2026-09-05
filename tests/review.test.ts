@@ -747,3 +747,94 @@ void test('Simulator blocks invalid budgets, duplicate classes and incomplete so
     ),
   );
 });
+
+import {
+  analyzeEvent,
+  eventClasses,
+  presetShocks,
+  validateEventAI,
+} from '../lib/scenarios/events';
+void test('Event outcomes reconcile to holding contributions and preserve ordered examples', () => {
+  const c = new PortfolioReviewService(
+    new DatasetPortfolioRepository(data),
+  ).reviewClient('CL-0006', '2026-08-26');
+  const shocks = presetShocks('rates', eventClasses(c.portfolios));
+  const results = analyzeEvent(c.portfolios, shocks);
+  for (const p of results) {
+    assert.equal(p.blocked, false);
+    for (const o of p.outcomes) {
+      assert.equal(
+        Math.round(o.change * 100),
+        p.rows.reduce((n, r) => n + Math.round(r[o.key] * 100), 0),
+      );
+      assert.equal(
+        Math.round(o.after * 100),
+        Math.round(p.total! * 100) + Math.round(o.change * 100),
+      );
+    }
+    assert.ok(p.outcomes[0].after <= p.outcomes[1].after);
+    assert.ok(p.outcomes[1].after <= p.outcomes[2].after);
+  }
+  const neutral = analyzeEvent(
+    c.portfolios,
+    presetShocks('custom', eventClasses(c.portfolios)),
+  );
+  assert.ok(
+    neutral.every((p) =>
+      p.outcomes.every((o) => o.change === 0 && o.after === p.total),
+    ),
+  );
+  const wipe = analyzeEvent(
+    c.portfolios,
+    shocks.map((s) => ({ ...s, down: -100, middle: -100, up: -100 })),
+  );
+  assert.ok(wipe.every((p) => p.outcomes.every((o) => o.after === 0)));
+});
+void test('Event model blocks bad source values, missing shock classes and unordered or duplicate rows', () => {
+  const c = new PortfolioReviewService(
+    new DatasetPortfolioRepository(data),
+  ).reviewClient('CL-0006', '2026-08-26');
+  const shocks = presetShocks('conflict', eventClasses(c.portfolios));
+  assert.throws(() => analyzeEvent(c.portfolios, shocks.slice(1)));
+  assert.throws(() => analyzeEvent(c.portfolios, [...shocks, shocks[0]]));
+  assert.throws(() =>
+    analyzeEvent(
+      c.portfolios,
+      shocks.map((s) => ({ ...s, down: 20, middle: 0 })),
+    ),
+  );
+  assert.throws(() =>
+    analyzeEvent(
+      c.portfolios,
+      shocks.map((s) => ({ ...s, down: -101 })),
+    ),
+  );
+  const blocked = analyzeEvent(
+    c.portfolios.map((p) => ({ ...p, total: null })),
+    shocks,
+  );
+  assert.ok(blocked.every((p) => p.blocked && p.outcomes.length === 0));
+});
+void test('Event AI must reference assessed portfolios and cannot invent numeric predictions', () => {
+  const r = {
+    summary: 'These are conditional examples.',
+    reviews: [
+      {
+        portfolioId: 'PF-0008',
+        interpretation:
+          'The supplied mix has different sensitivity to the assumed shocks.',
+        check: 'Have the actual exposures been checked?',
+      },
+    ],
+  };
+  assert.equal(validateEventAI(r, ['PF-0008']).reviews.length, 1);
+  assert.throws(() => validateEventAI(r, ['PF-other']));
+  assert.throws(() =>
+    validateEventAI({ ...r, reviews: [...r.reviews, ...r.reviews] }, [
+      'PF-0008',
+    ]),
+  );
+  assert.throws(() =>
+    validateEventAI({ ...r, summary: 'Expect 10% returns' }, ['PF-0008']),
+  );
+});

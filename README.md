@@ -178,3 +178,11 @@ Reference: [OpenAI structured outputs](https://developers.openai.com/api/docs/gu
 ## Portfolio simulator
 
 Scenario explorer → Portfolio simulator compares current and RM-entered asset-class weights for one selected portfolio. Target weights use up to two decimal places and must total 100%. A largest-remainder cents allocation preserves the current USD budget. The result shows hypothetical increases/reductions, supplied mandate-band checks (not applied to custody), and current/proposed values under identical user-entered one-time asset-class shocks. Zero shock is the default; no forecast probabilities or recommended weights are supplied. These are allocation illustrations, not executable trades: liquidity, collateral, lots, tax, fees, security selection and FX require separate review. Source-blocked portfolios cannot be simulated.
+
+## World events & impact
+
+Scenario explorer now defaults to World events & impact. Hypothetical Fed rate increases, US tariff announcements, conflict escalation and custom events load editable downside/middle/upside asset-class price-shock assumptions. Every preset is explicitly arbitrary, uncalibrated and unassigned a probability. They are not upcoming news, expected returns, or bounds on possible outcomes. Sources linked in the UI explain broad mechanisms only, never the numeric presets.
+
+The deterministic event model applies each entered class shock to every holding in that class, rounds individual changes to cents, and aggregates separately per portfolio. It shows percentage changes, USD differences, resulting values and a holding-level contribution table. Source-blocked portfolios stay visibly unassessed. Alternatives and structured-product proxies are expressly limited; duration, sectors, currency, nonlinear payoffs, income and liquidity are not modeled.
+
+`/api/event-intelligence` validates scope and inputs, rebuilds portfolio results from the server snapshot, then asks OpenAI for qualitative interpretation. The response must cite unique assessed portfolio IDs and cannot introduce numerical claims. Input edits/client changes invalidate results and cancel pending AI requests. No live news provider, market prediction or trade execution is implied.
